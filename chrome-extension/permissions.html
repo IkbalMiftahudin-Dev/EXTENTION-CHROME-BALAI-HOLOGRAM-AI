@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BALAI — Izin Mikrofon</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body style="display:grid;place-items:center;padding:24px;">
+  <div class="modal-card" style="text-align:center;">
+    <h2 style="color:var(--holo-primary);margin-bottom:10px;">🎙️ Aktifkan Mikrofon BALAI</h2>
+    <p class="hint-text" style="font-size:0.86rem;margin-bottom:18px;">
+      Klik tombol di bawah lalu pilih <strong>Izinkan (Allow)</strong> agar BALAI dapat mendengar perintah suara Anda di Side Panel maupun Tab Layar Penuh.
+    </p>
+    <button class="send-btn" id="request-mic-btn" style="padding:12px 24px;font-size:0.9rem;">
+      Izinkan Akses Mikrofon
+    </button>
+    <p id="perm-status" class="hint-text" style="margin-top:14px;font-size:0.82rem;"></p>
+  </div>
+  <script src="js/permissions.js"></script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BALAI — Holographic AI Assistant</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-theme="cyan">
+  <canvas id="hologram-canvas"></canvas>
+  <div class="hud-scanlines"></div>
+
+  <div class="vrm-drop-overlay" id="vrm-drop-overlay">
+    Lepaskan file avatar 3D (.VRM) di sini untuk memproyeksikan BALAI
+  </div>
+
+  <div class="hud-layer">
+    <header class="top-bar">
+      <div class="brand-cluster">
+        <span class="brand-dot"></span>
+        <span class="brand-title" id="brand-title">BALAI</span>
+        <span class="status-pill" id="status-pill">Standby</span>
+      </div>
+
+      <div class="top-controls">
+        <button class="hud-btn" id="toggle-left-btn" title="Jadwal & Tugas">📅 <span class="btn-label-desktop">Jadwal</span></button>
+        <button class="hud-btn" id="toggle-right-btn" title="Log Percakapan">💬 <span class="btn-label-desktop">Log</span></button>
+        <button class="hud-btn" id="vrm-upload-btn" title="Muat Avatar Manusia 3D (.VRM)">🧍 <span class="btn-label-desktop">.VRM</span></button>
+        <button class="hud-btn active" id="vrm-shader-btn" style="display:none;" title="Switch Shader Hologram / Natural">✨</button>
+        <button class="hud-btn" id="peppers-btn" title="Mode Piramida Hologram 4-Sisi">🔺</button>
+        <button class="hud-btn" id="expand-tab-btn" title="Buka di Tab Layar Penuh">⤢</button>
+        <button class="hud-btn" id="open-settings-btn" title="Pengaturan BALAI">⚙️</button>
+        <input type="file" id="vrm-file-input" accept=".vrm" hidden />
+      </div>
+    </header>
+
+    <div class="mic-perm-banner" id="mic-perm-banner">
+      <span>🎙️ Chrome Side Panel perlu izin mikrofon sekali saja agar BALAI bisa mendengar suara Anda.</span>
+      <button class="send-btn" id="grant-mic-btn" type="button">Izinkan Mikrofon</button>
+    </div>
+
+    <main class="hud-main">
+      <aside class="hud-panel collapsed" id="left-panel">
+        <div class="panel-header">
+          <span class="panel-title">Jadwal &amp; Tugas BALAI</span>
+          <div style="display:flex;gap:5px;">
+            <button class="hud-btn" id="open-add-schedule-btn" style="padding:4px 8px;font-size:0.7rem;">+ Tambah</button>
+            <button class="icon-mini-btn" id="close-left-btn" title="Tutup">×</button>
+          </div>
+        </div>
+        <div class="tab-row">
+          <button class="tab-btn active" id="tab-schedules">Jadwal</button>
+          <button class="tab-btn" id="tab-tasks">Tugas</button>
+        </div>
+        <div class="panel-body" id="schedule-list"></div>
+        <div class="panel-body" id="task-list" style="display:none;"></div>
+      </aside>
+
+      <section class="center-stage-overlay">
+        <div class="holo-preview-card hidden" id="holo-preview-card">
+          <div class="holo-preview-header">
+            <span id="holo-preview-title">PROYEKSI DATA</span>
+            <button class="icon-mini-btn" id="close-preview-btn" title="Tutup">×</button>
+          </div>
+          <div class="holo-preview-list" id="holo-preview-list"></div>
+        </div>
+        <div class="subtitle-box empty" id="subtitle-box"></div>
+      </section>
+
+      <aside class="hud-panel collapsed" id="right-panel">
+        <div class="panel-header">
+          <span class="panel-title">Log Percakapan</span>
+          <div style="display:flex;gap:5px;">
+            <button class="icon-mini-btn" id="clear-chat-btn" title="Bersihkan Riwayat">🗑</button>
+            <button class="icon-mini-btn" id="close-right-btn" title="Tutup">×</button>
+          </div>
+        </div>
+        <div class="panel-body" id="chat-list"></div>
+      </aside>
+    </main>
+
+    <footer class="bottom-dock">
+      <div class="quick-prompts">
+        <button class="prompt-chip" data-prompt="Coba cek jadwal saya hari ini">📅 Jadwal hari ini</button>
+        <button class="prompt-chip" data-prompt="Apa jadwal saya besok?">🗓️ Besok</button>
+        <button class="prompt-chip" data-prompt="Cek daftar tugas saya">✅ Tugas</button>
+        <button class="prompt-chip" data-prompt="Jam berapa sekarang?">⏰ Ringkasan</button>
+      </div>
+
+      <div class="command-bar">
+        <button class="mic-orb-btn" id="mic-btn" title="Klik untuk bicara dengan BALAI">🎙️</button>
+        <input
+          type="text"
+          id="command-input"
+          class="command-input"
+          placeholder="Tanya BALAI... (misal: cek jadwal hari ini)"
+          autocomplete="off"
+        />
+        <button class="hud-btn" id="stop-speak-btn" style="display:none;border-radius:999px;">⏹</button>
+        <button class="hud-btn" id="handsfree-btn" style="border-radius:999px;" title="Auto-Listen Hands-Free">🔄</button>
+        <button class="send-btn" id="send-btn">Kirim</button>
+      </div>
+
+      <div class="mode-banner" id="mode-banner">Memuat BALAI...</div>
+    </footer>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>⚙️ Pengaturan BALAI</h2>
+        <button class="icon-mini-btn" id="close-settings-btn">×</button>
+      </div>
+      <form id="settings-form">
+        <div class="form-group">
+          <label for="set-assistant-name">Nama Asisten AI</label>
+          <input type="text" id="set-assistant-name" class="form-control" value="BALAI" />
+        </div>
+
+        <div class="form-group">
+          <label for="set-api-key">Gemini API Key (Tersinkron di Chrome Anda)</label>
+          <input type="password" id="set-api-key" class="form-control" placeholder="Tempel API key baru (kosongkan jika tidak mengubah)" />
+          <div class="hint-text">
+            Status: <strong id="api-key-status">-</strong><br />
+            Buat gratis di <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="set-model">Model Gemini</label>
+            <select id="set-model" class="form-control">
+              <option value="gemini-3-flash-preview">gemini-3-flash-preview (Cepat)</option>
+              <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (Ringan)</option>
+              <option value="gemini-3.8-flash">gemini-3.8-flash (Terbaru)</option>
+              <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Pro)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="set-theme">Warna Hologram</label>
+            <select id="set-theme" class="form-control">
+              <option value="cyan">Cyan Sci-Fi</option>
+              <option value="violet">Violet Cortana</option>
+              <option value="emerald">Emerald Matrix</option>
+              <option value="gold">Gold Jarvis</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="set-voice">Suara Text-to-Speech</label>
+          <select id="set-voice" class="form-control"></select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="set-voice-rate">Kecepatan (0.7 - 1.4)</label>
+            <input type="number" step="0.05" min="0.7" max="1.4" id="set-voice-rate" class="form-control" value="1.05" />
+          </div>
+          <div class="form-group">
+            <label for="set-voice-pitch">Nada / Pitch (0.7 - 1.4)</label>
+            <input type="number" step="0.05" min="0.7" max="1.4" id="set-voice-pitch" class="form-control" value="1.0" />
+          </div>
+        </div>
+
+        <div class="form-group" style="padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);">
+          <label>Cadangkan / Pindahkan Data Antar Perangkat</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" class="hud-btn" id="export-backup-btn">⬇️ Ekspor JSON</button>
+            <button type="button" class="hud-btn" id="import-backup-btn">⬆️ Impor JSON</button>
+            <button type="button" class="hud-btn" id="reset-avatar-btn">Reset Avatar</button>
+            <input type="file" id="import-file-input" accept=".json" hidden />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="send-btn">Simpan Pengaturan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Schedule / Task Modal -->
+  <div class="modal-backdrop" id="add-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>➕ Tambah Jadwal / Tugas</h2>
+        <button class="icon-mini-btn" id="close-add-modal-btn">×</button>
+      </div>
+      <form id="add-schedule-form">
+        <div class="form-group">
+          <label for="add-type">Tipe Data</label>
+          <select id="add-type" class="form-control">
+            <option value="schedule">Jadwal / Agenda</option>
+            <option value="task">Tugas (To-Do)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="add-title">Judul</label>
+          <input type="text" id="add-title" class="form-control" placeholder="Contoh: Meeting Klien" required />
+        </div>
+
+        <div id="schedule-only-fields">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="add-date">Tanggal</label>
+              <input type="date" id="add-date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="add-location">Lokasi / Link</label>
+              <input type="text" id="add-location" class="form-control" placeholder="Google Meet" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="add-start-time">Jam Mulai</label>
+              <input type="time" id="add-start-time" class="form-control" value="09:00" />
+            </div>
+            <div class="form-group">
+              <label for="add-end-time">Jam Selesai</label>
+              <input type="time" id="add-end-time" class="form-control" />
+            </div>
+          </div>
+        </div>
+
+        <div id="task-only-fields" style="display:none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="add-due-date">Tenggat</label>
+              <input type="date" id="add-due-date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="add-priority">Prioritas</label>
+              <select id="add-priority" class="form-control">
+                <option value="high">Tinggi</option>
+                <option value="medium" selected>Sedang</option>
+                <option value="low">Rendah</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="add-notes">Catatan</label>
+            <input type="text" id="add-notes" class="form-control" placeholder="Catatan singkat..." />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="send-btn">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
